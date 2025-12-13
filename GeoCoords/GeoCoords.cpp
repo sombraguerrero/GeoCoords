@@ -99,8 +99,8 @@ void GeoCoord::SetDMS() {
 ostream& operator<<(ostream& out, const GeoCoord& c)
 {
     out << "(" << c.latitude << ", " << c.longitude << ")" << endl
-        << c.latdegrees << "° " << c.latminutes << "' " << c.latseconds << "\" " << c.latDir << " by "
-        << c.londegrees << "° " << c.lonminutes << "' " << c.lonseconds << "\" " << c.lonDir << endl;
+        << c.latdegrees << "°" << c.latminutes << "'" << c.latseconds << "\"" << c.latDir << " by "
+        << c.londegrees << "°" << c.lonminutes << "'" << c.lonseconds << "\"" << c.lonDir << endl;
     return out;
 }
 
