@@ -1,6 +1,3 @@
-// GeoCoords.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #include <iostream>
 #include <cmath>
 #include <cctype>
@@ -112,8 +109,7 @@ int main(int argc, char* argv[])
 {
     if (argc == 2) {
         if (strcmp(argv[1], "-float") == 0) {
-            double lat;
-            double lon;
+            double lat, lon;
             cout << "Please input the latitude and longitude coordinate pair: ";
             cin >> lat >> lon;
             GeoCoord g = GeoCoord(lat, lon);
@@ -121,14 +117,8 @@ int main(int argc, char* argv[])
             cout << g;
         }
         else if (strcmp(argv[1], "-dms") == 0) {
-            double latdeg;
-            double londeg;
-            double latmin;
-            double lonmin;
-            double latsec;
-            double lonsec;
-            char lator;
-            char lonor;
+            double latdeg, londeg,latmin, lonmin, latsec, lonsec;
+            char lator, lonor;
             cout << "Please input the latitude degrees, minutes, seconds, and orientation (N, S): ";
             cin >> latdeg >> latmin >> latsec >> lator;
             cout << "Please input the longitude degrees, minutes, seconds, and orientation (E, W): ";
