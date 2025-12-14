@@ -278,7 +278,7 @@ int main(int argc, char* argv[])
             cin >> one >> two;
             cout << "The distance between " << one << " and " << two << " is " << one.distanceTo(two) << " miles." << endl;
             cout << "The midpoint between " << one << " and " << two << " is " << one.interpolateTo(two, .5) << endl;
-            cout << "A bounding box of  around " << one << " having a radius of " << r << " miles is " << one.CalcBoundingBox(r) << endl;
+            cout << "A bounding box around " << one << " having a radius of " << r << " miles is " << one.CalcBoundingBox(r) << endl;
             cout << "From " << one << " facing True North, you would rotate " << one.bearingTo(two) << "° clockwise to bear toward " << two << ".\r\n";
         }
     }
