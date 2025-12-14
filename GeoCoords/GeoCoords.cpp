@@ -48,11 +48,12 @@ public:
 };
 
 // Bounding box around this point
-GeoCoord::BoundingBox GeoCoord::CalcBoundingBox(double radiusKm)
+GeoCoord::BoundingBox GeoCoord::CalcBoundingBox(double radius)
 {
-    const double degLatKm = 111.0;
-    double deltaLat = radiusKm / degLatKm;
-    double deltaLon = radiusKm / (degLatKm * cos(latitude * pi / 180.0));
+    //const double degLatKm = 111.0;
+    const double degLatMi = 69.0;
+    double deltaLat = radius / degLatMi;
+    double deltaLon = radius / (degLatMi * cos(latitude * pi / 180.0));
 
     BoundingBox box;
     box.minLat = latitude - deltaLat;
@@ -72,7 +73,7 @@ To turn that into a real-world distance, you multiply by the radius of the spher
 ***************************************/
 double GeoCoord::distanceTo(const GeoCoord& other)
 {
-    constexpr double R = 6371.0; // Earth radius km
+    constexpr double R = 3959.0; // Earth radius mi
     double phi1 = deg2rad(latitude);
     double phi2 = deg2rad(other.latitude);
     double dPhi = deg2rad(other.latitude - latitude);
@@ -275,9 +276,9 @@ int main(int argc, char* argv[])
             GeoCoord one, two;
             double r = 50;
             cin >> one >> two;
-            cout << "The distance between " << one << " and " << two << " is " << one.distanceTo(two) << "Km" << endl;
+            cout << "The distance between " << one << " and " << two << " is " << one.distanceTo(two) << "miles" << endl;
             cout << "The midpoint between " << one << " and " << two << " is " << one.interpolateTo(two, .5) << endl;
-            cout << "A bounding box of  around " << one << " having a radius of " << r << "km is " << one.CalcBoundingBox(r) << endl;
+            cout << "A bounding box of  around " << one << " having a radius of " << r << "miles is " << one.CalcBoundingBox(r) << endl;
             cout << "From " << one << " facing True North, you would rotate " << one.bearingTo(two) << "° clockwise to bear toward " << two << ".\r\n";
         }
     }
