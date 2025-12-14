@@ -276,9 +276,9 @@ int main(int argc, char* argv[])
             GeoCoord one, two;
             double r = 50;
             cin >> one >> two;
-            cout << "The distance between " << one << " and " << two << " is " << one.distanceTo(two) << "miles" << endl;
+            cout << "The distance between " << one << " and " << two << " is " << one.distanceTo(two) << " miles." << endl;
             cout << "The midpoint between " << one << " and " << two << " is " << one.interpolateTo(two, .5) << endl;
-            cout << "A bounding box of  around " << one << " having a radius of " << r << "miles is " << one.CalcBoundingBox(r) << endl;
+            cout << "A bounding box of  around " << one << " having a radius of " << r << " miles is " << one.CalcBoundingBox(r) << endl;
             cout << "From " << one << " facing True North, you would rotate " << one.bearingTo(two) << "° clockwise to bear toward " << two << ".\r\n";
         }
     }
