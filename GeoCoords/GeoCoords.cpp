@@ -3,9 +3,8 @@
 #include <cctype>
 #include <cstring>
 #include <cstdlib>
-#include <numbers>
 using namespace std;
-using namespace numbers;
+constexpr double pi = 3.1415926535897932384626433832795;
 
 class GeoCoord
 {
