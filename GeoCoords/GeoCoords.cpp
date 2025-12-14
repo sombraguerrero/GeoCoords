@@ -3,9 +3,12 @@
 #include <cctype>
 #include <cstring>
 #include <cstdlib>
+#include <numbers>
 using namespace std;
+using namespace numbers;
 
-class GeoCoord {
+class GeoCoord
+{
     double latitude;
     double longitude;
     double latdegrees;
@@ -16,28 +19,142 @@ class GeoCoord {
     double lonseconds;
     char latDir;
     char lonDir;
+
+    static double deg2rad(double deg) { return deg * pi / 180.0; }
+    static double rad2deg(double rad) { return rad * 180.0 / pi; }
+
 public:
+    typedef struct BoundingBox
+    {
+        double minLat, maxLat;
+        double minLon, maxLon;
+    } BoundingBox;
+
     GeoCoord();
     GeoCoord(double, double);
     GeoCoord(double, double, double, double, double, double, char, char);
     void SetDMS();
     void SetFloat();
+    void normalizeLongitude(double);
+    void clampLatitude(double);
+    BoundingBox CalcBoundingBox(double);
+    GeoCoord interpolateTo(const GeoCoord& other, double f);
+    double bearingTo(const GeoCoord& other);
+    double distanceTo(const GeoCoord& other);
+    void printConversion();
+    
     friend ostream& operator<<(ostream& out, const GeoCoord& c);
+    friend istream& operator>>(istream& in, GeoCoord& c);
 };
 
-GeoCoord::GeoCoord() {
+// Bounding box around this point
+GeoCoord::BoundingBox GeoCoord::CalcBoundingBox(double radiusKm)
+{
+    const double degLatKm = 111.0;
+    double deltaLat = radiusKm / degLatKm;
+    double deltaLon = radiusKm / (degLatKm * cos(latitude * pi / 180.0));
+
+    BoundingBox box;
+    box.minLat = latitude - deltaLat;
+    box.maxLat = latitude + deltaLat;
+    box.minLon = longitude - deltaLon;
+    box.maxLon = longitude + deltaLon;
+    return box;
+
+}
+
+/****************************************
+The Haversine formula itself gives you an angular distance (in radians) between two points on a sphere.
+To turn that into a real-world distance, you multiply by the radius of the sphere you’re modeling.
+- If you use Earth’s mean radius = 6,371 km, the result will be in kilometers.
+- If you use Earth’s radius in miles ≈ 3,959 mi, the result will be in miles.
+- If you use meters (6,371,000 m), the result will be in meters.
+***************************************/
+double GeoCoord::distanceTo(const GeoCoord& other)
+{
+    constexpr double R = 6371.0; // Earth radius km
+    double phi1 = deg2rad(latitude);
+    double phi2 = deg2rad(other.latitude);
+    double dPhi = deg2rad(other.latitude - latitude);
+    double dLambda = deg2rad(other.longitude - longitude);
+
+    double a = sin(dPhi / 2) * sin(dPhi / 2) +
+        cos(phi1) * cos(phi2) *
+        sin(dLambda / 2) * sin(dLambda / 2);
+    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return R * c;
+
+}
+
+// Bearing to another coordinate
+double GeoCoord::bearingTo(const GeoCoord& other)
+{
+    double phi1 = deg2rad(latitude);
+    double phi2 = deg2rad(other.latitude);
+    double dLambda = deg2rad(other.longitude - longitude);
+
+    double y = sin(dLambda) * cos(phi2);
+    double x = cos(phi1) * sin(phi2) -
+        sin(phi1) * cos(phi2) * cos(dLambda);
+
+    double theta = atan2(y, x);
+    return fmod((rad2deg(theta) + 360.0), 360.0);
+
+}
+
+// Interpolate toward another coordinate at fraction f
+GeoCoord GeoCoord::interpolateTo(const GeoCoord& other, double f)
+{
+    double phi1 = deg2rad(latitude), lambda1 = deg2rad(longitude);
+    double phi2 = deg2rad(other.latitude), lambda2 = deg2rad(other.longitude);
+
+    double d = 2 * asin(sqrt(pow(sin((phi2 - phi1) / 2), 2) +
+        cos(phi1) * cos(phi2) * pow(sin((lambda2 - lambda1) / 2), 2)));
+
+    double A = sin((1 - f) * d) / sin(d);
+    double B = sin(f * d) / sin(d);
+
+    double x = A * cos(phi1) * cos(lambda1) + B * cos(phi2) * cos(lambda2);
+    double y = A * cos(phi1) * sin(lambda1) + B * cos(phi2) * sin(lambda2);
+    double z = A * sin(phi1) + B * sin(phi2);
+
+    double phi3 = atan2(z, sqrt(x * x + y * y));
+    double lambda3 = atan2(y, x);
+
+    return GeoCoord(rad2deg(phi3), rad2deg(lambda3));
+
+}
+
+// Normalizing and clamping are useful for error correction when crossing the international dateline
+void GeoCoord::normalizeLongitude(double lval)
+{
+    while (lval > 180.0) longitude -= 360.0;
+    while (lval < -180.0) longitude += 360.0;
+}
+
+void GeoCoord::clampLatitude(double lval)
+{
+    if (lval > 90.0) latitude = 90.0;
+    if (lval < -90.0) latitude = -90.0;
+}
+
+
+GeoCoord::GeoCoord()
+{
     latitude = longitude = latdegrees = londegrees = latminutes = lonminutes = latseconds = lonseconds = 0;
     latDir = lonDir = '\0';
 }
 
-GeoCoord::GeoCoord(double latitude, double longitude) {
+GeoCoord::GeoCoord(double latitude, double longitude)
+{
     this->latitude = latitude;
     this->longitude = longitude;
     latdegrees = londegrees = latminutes = lonminutes = latseconds = lonseconds = 0;
     latDir = lonDir = '\0';
 }
 
-GeoCoord::GeoCoord(double latdegrees, double londegrees, double latminutes, double lonminutes, double latseconds, double lonseconds, char latDir, char lonDir) {
+GeoCoord::GeoCoord(double latdegrees, double londegrees, double latminutes, double lonminutes, double latseconds, double lonseconds, char latDir, char lonDir)
+{
     latitude = 0;
     longitude = 0;
     this->latdegrees = latdegrees;
@@ -50,7 +167,8 @@ GeoCoord::GeoCoord(double latdegrees, double londegrees, double latminutes, doub
     this->lonDir = lonDir;
 }
 
-void GeoCoord::SetFloat() {
+void GeoCoord::SetFloat()
+{
     latitude = latdegrees + (latminutes / 60) + (latseconds / 3600);
     longitude = londegrees + (lonminutes / 60) + (lonseconds / 3600);
     if (toupper(latDir) == 'S') {
@@ -61,7 +179,8 @@ void GeoCoord::SetFloat() {
     }
 }
 
-void GeoCoord::SetDMS() {
+void GeoCoord::SetDMS()
+{
     double latint, latfloat, lonint, lonfloat;
 
     double abslat = abs(latitude);
@@ -95,29 +214,52 @@ void GeoCoord::SetDMS() {
     }
 }
 
+// Overload >> for input
+istream& operator>>(istream& in, GeoCoord& c)
+{
+    cout << "Please input the latitude and longitude coordinate pair: ";
+    in >> c.latitude >> c.longitude;
+    return in;
+}
+
 // Overload << for output
 ostream& operator<<(ostream& out, const GeoCoord& c)
 {
-    out << "(" << c.latitude << ", " << c.longitude << ")" << endl
-        << c.latdegrees << "°" << c.latminutes << "'" << c.latseconds << "\"" << c.latDir << " by "
-        << c.londegrees << "°" << c.lonminutes << "'" << c.lonseconds << "\"" << c.lonDir << endl;
+    out << "(" << c.latitude << ", " << c.longitude << ")";
     return out;
+}
+
+// Overload << for output
+ostream& operator<<(ostream& out, const GeoCoord::BoundingBox& c)
+{
+    GeoCoord min = GeoCoord(c.minLat, c.minLon);
+    GeoCoord max = GeoCoord(c.maxLat, c.maxLon);
+    out << min << " to " << max;
+    return out;
+}
+
+void GeoCoord::printConversion()
+{
+    cout << this << endl
+        << latdegrees << "°" << latminutes << "'" << latseconds << "\"" << latDir << " by "
+        << londegrees << "°" << lonminutes << "'" << lonseconds << "\"" << lonDir << endl;
 }
 
 
 int main(int argc, char* argv[])
 {
-    if (argc == 2) {
-        if (strcmp(argv[1], "-float") == 0) {
-            double lat, lon;
-            cout << "Please input the latitude and longitude coordinate pair: ";
-            cin >> lat >> lon;
-            GeoCoord g = GeoCoord(lat, lon);
+    if (argc == 2)
+    {
+        if (strcmp(argv[1], "-float") == 0)
+        {
+            GeoCoord g;
+            cin >> g;
             g.SetDMS();
             cout << g;
         }
-        else if (strcmp(argv[1], "-dms") == 0) {
-            double latdeg, londeg,latmin, lonmin, latsec, lonsec;
+        else if (strcmp(argv[1], "-dms") == 0)
+        {
+            double latdeg, londeg, latmin, lonmin, latsec, lonsec;
             char lator, lonor;
             cout << "Please input the latitude degrees, minutes, seconds, and orientation (N, S): ";
             cin >> latdeg >> latmin >> latsec >> lator;
@@ -126,6 +268,17 @@ int main(int argc, char* argv[])
             GeoCoord g = GeoCoord(latdeg, londeg, latmin, lonmin, latsec, lonsec, lator, lonor);
             g.SetFloat();
             cout << g;
+
+        }
+        else if (strcmp(argv[1], "-toolkit") == 0)
+        {
+            GeoCoord one, two;
+            double r = 50;
+            cin >> one >> two;
+            cout << "The distance between " << one << " and " << two << " is " << one.distanceTo(two) << "Km" << endl;
+            cout << "The midpoint between " << one << " and " << two << " is " << one.interpolateTo(two, .5) << endl;
+            cout << "A bounding box of  around " << one << " having a radius of " << r << "km is " << one.CalcBoundingBox(r) << endl;
+            cout << "From " << one << " facing True North, you would rotate " << one.bearingTo(two) << "° clockwise to bear toward " << two << ".\r\n";
         }
     }
     return EXIT_SUCCESS;

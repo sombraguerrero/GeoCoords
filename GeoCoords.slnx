@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="GeoCoords/GeoCoords.vcxproj" />
+  <Project Path="GeoCoords/GeoCoords.vcxproj" Id="ecf8c12c-f265-48b8-a799-bfec4208453f" />
 </Solution>
