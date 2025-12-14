@@ -4,7 +4,6 @@
 #include <cstring>
 #include <cstdlib>
 using namespace std;
-constexpr double pi = 3.1415926535897932384626433832795;
 
 class GeoCoord
 {
@@ -19,6 +18,7 @@ class GeoCoord
     char latDir;
     char lonDir;
 
+    static constexpr double pi = 3.1415926535897932384626433832795;
     static double deg2rad(double deg) { return deg * pi / 180.0; }
     static double rad2deg(double rad) { return rad * 180.0 / pi; }
 
