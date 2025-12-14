@@ -28,6 +28,21 @@ public:
     {
         double minLat, maxLat;
         double minLon, maxLon;
+
+        // Check if a point is inside this bounding box
+        bool contains(const GeoCoord& point) const {
+            return (point.latitude >= minLat && point.latitude <= maxLat &&
+                point.longitude >= minLon && point.longitude <= maxLon);
+        }
+
+        // Check if this bounding box overlaps another
+        bool overlaps(const BoundingBox& other) const {
+            bool latOverlap = (minLat <= other.maxLat && maxLat >= other.minLat);
+            bool lonOverlap = (minLon <= other.maxLon && maxLon >= other.minLon);
+            return latOverlap && lonOverlap;
+        }
+
+
     } BoundingBox;
 
     GeoCoord();
@@ -274,11 +289,31 @@ int main(int argc, char* argv[])
         else if (strcmp(argv[1], "-toolkit") == 0)
         {
             GeoCoord one, two;
-            double r = 50;
+            double r = 30;
             cin >> one >> two;
+            auto box1 = one.CalcBoundingBox(r);
+            auto box2 = two.CalcBoundingBox(r);
             cout << "The distance between " << one << " and " << two << " is " << one.distanceTo(two) << " miles." << endl;
             cout << "The midpoint between " << one << " and " << two << " is " << one.interpolateTo(two, .5) << endl;
-            cout << "A bounding box around " << one << " having a radius of " << r << " miles is " << one.CalcBoundingBox(r) << endl;
+            cout << "A bounding box around " << one << " having a radius of " << r << " miles is " << box1 << endl;
+            cout << "A bounding box around " << two << " having a radius of " << r << " miles is " << box2 << endl;
+            if (box1.overlaps(box2))
+            {
+                cout << "These bounding boxes overlap!" << endl;
+            }
+            else
+            {
+                cout << "These bounding boxes DO NOT overlap!" << endl;
+            }
+            GeoCoord otherPoint = two.interpolateTo(one, .33);
+            if (box1.contains(otherPoint))
+            {
+                cout << "The point one third of the  way out between points one and two is within the first's bounding box!" << endl;
+            }
+            else
+            {
+                cout << "The point one third of the  way out between points one and two is NOT within the first's bounding box!" << endl;
+            }
             cout << "From " << one << " facing True North, you would rotate " << one.bearingTo(two) << "° clockwise to bear toward " << two << ".\r\n";
         }
     }
