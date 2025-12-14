@@ -255,7 +255,7 @@ ostream& operator<<(ostream& out, const GeoCoord::BoundingBox& c)
 
 void GeoCoord::printConversion()
 {
-    cout << this << endl
+    cout << *this << endl
         << latdegrees << "°" << latminutes << "'" << latseconds << "\"" << latDir << " by "
         << londegrees << "°" << lonminutes << "'" << lonseconds << "\"" << lonDir << endl;
 }
