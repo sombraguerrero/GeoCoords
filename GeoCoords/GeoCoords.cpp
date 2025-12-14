@@ -18,7 +18,6 @@ class GeoCoord
     char latDir;
     char lonDir;
 
-    static constexpr double pi = 3.1415926535897932384626433832795;
     static double deg2rad(double deg) { return deg * pi / 180.0; }
     static double rad2deg(double rad) { return rad * 180.0 / pi; }
 
@@ -44,6 +43,7 @@ public:
 
     } BoundingBox;
 
+    static constexpr double pi = 3.1415926535897932384626433832795;
     GeoCoord();
     GeoCoord(double, double);
     GeoCoord(double, double, double, double, double, double, char, char);
@@ -55,6 +55,8 @@ public:
     GeoCoord interpolateTo(const GeoCoord& other, double f);
     double bearingTo(const GeoCoord& other);
     double distanceTo(const GeoCoord& other);
+    double getLat() { return latitude; }
+    double getLon() { return longitude; }
     void printConversion();
     
     friend ostream& operator<<(ostream& out, const GeoCoord& c);
@@ -77,6 +79,65 @@ GeoCoord::BoundingBox GeoCoord::CalcBoundingBox(double radius)
     return box;
 
 }
+
+static double vincentyDistance(GeoCoord& p1, GeoCoord& p2) {
+    // WGS84 ellipsoid constants
+    const double a = 6378137.0;             // semi-major axis (meters)
+    const double f = 1.0 / 298.257223563;   // flattening
+    const double b = (1 - f) * a;           // semi-minor axis
+
+    // Convert degrees to radians
+    auto toRad = [](double deg) { return deg * GeoCoord::pi / 180.0; };
+    double phi1 = toRad(p1.getLat());
+    double phi2 = toRad(p2.getLat());
+    double L = toRad(p2.getLon() - p1.getLon());
+
+    double U1 = atan((1 - f) * tan(phi1));
+    double U2 = atan((1 - f) * tan(phi2));
+
+    double sinU1 = sin(U1), cosU1 = cos(U1);
+    double sinU2 = sin(U2), cosU2 = cos(U2);
+
+    double lambda = L, lambdaPrev;
+    double sinSigma, cosSigma, sigma;
+    double sinAlpha, cos2Alpha, cos2SigmaM;
+    int iterLimit = 100;
+    do {
+        double sinLambda = sin(lambda);
+        double cosLambda = cos(lambda);
+        sinSigma = sqrt((cosU2 * sinLambda) * (cosU2 * sinLambda) +
+            (cosU1 * sinU2 - sinU1 * cosU2 * cosLambda) *
+            (cosU1 * sinU2 - sinU1 * cosU2 * cosLambda));
+        if (sinSigma == 0) return 0.0; // coincident points
+
+        cosSigma = sinU1 * sinU2 + cosU1 * cosU2 * cosLambda;
+        sigma = atan2(sinSigma, cosSigma);
+        sinAlpha = cosU1 * cosU2 * sinLambda / sinSigma;
+        cos2Alpha = 1 - sinAlpha * sinAlpha;
+        cos2SigmaM = (cos2Alpha == 0) ? 0 : cosSigma - 2 * sinU1 * sinU2 / cos2Alpha;
+
+        double C = f / 16 * cos2Alpha * (4 + f * (4 - 3 * cos2Alpha));
+        lambdaPrev = lambda;
+        lambda = L + (1 - C) * f * sinAlpha *
+            (sigma + C * sinSigma *
+                (cos2SigmaM + C * cosSigma *
+                    (-1 + 2 * cos2SigmaM * cos2SigmaM)));
+    } while (fabs(lambda - lambdaPrev) > 1e-12 && --iterLimit > 0);
+
+    if (iterLimit == 0) return NAN; // formula failed to converge
+
+    double uSq = cos2Alpha * (a * a - b * b) / (b * b);
+    double A = 1 + uSq / 16384 * (4096 + uSq * (-768 + uSq * (320 - 175 * uSq)));
+    double B = uSq / 1024 * (256 + uSq * (-128 + uSq * (74 - 47 * uSq)));
+    double deltaSigma = B * sinSigma *
+        (cos2SigmaM + B / 4 * (cosSigma * (-1 + 2 * cos2SigmaM * cos2SigmaM) -
+            B / 6 * cos2SigmaM * (-3 + 4 * sinSigma * sinSigma) *
+            (-3 + 4 * cos2SigmaM * cos2SigmaM)));
+
+    double s = b * A * (sigma - deltaSigma); // distance in meters
+    return 0.6213711922 * (s / 1000.0); // return in miles
+}
+
 
 /****************************************
 The Haversine formula itself gives you an angular distance (in radians) between two points on a sphere.
@@ -292,7 +353,8 @@ int main(int argc, char* argv[])
             cin >> one >> two;
             auto box1 = one.CalcBoundingBox(r);
             auto box2 = two.CalcBoundingBox(r);
-            cout << "The distance between " << one << " and " << two << " is " << one.distanceTo(two) << " miles." << endl;
+            cout << "The Haversine distance between " << one << " and " << two << " is " << one.distanceTo(two) << " miles." << endl;
+            cout << "The Vincenty distance between " << one << " and " << two << " is " << vincentyDistance(one, two) << " miles." << endl;
             cout << "The midpoint between " << one << " and " << two << " is " << one.interpolateTo(two, .5) << endl;
             cout << "A bounding box around " << one << " having a radius of " << r << " miles is " << box1 << endl;
             cout << "A bounding box around " << two << " having a radius of " << r << " miles is " << box2 << endl;
