@@ -282,7 +282,7 @@ int main(int argc, char* argv[])
             cin >> londeg >> lonmin >> lonsec >> lonor;
             GeoCoord g = GeoCoord(latdeg, londeg, latmin, lonmin, latsec, lonsec, lator, lonor);
             g.SetFloat();
-            cout << g;
+            g.printConversion();
 
         }
         else if (strcmp(argv[1], "-toolkit") == 0)
