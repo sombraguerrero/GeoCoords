@@ -331,7 +331,7 @@ int main(int argc, char* argv[])
             GeoCoord g;
             cin >> g;
             g.SetDMS();
-            cout << g;
+            g.printConversion();
         }
         else if (strcmp(argv[1], "-dms") == 0)
         {
@@ -343,7 +343,7 @@ int main(int argc, char* argv[])
             cin >> londeg >> lonmin >> lonsec >> lonor;
             GeoCoord g = GeoCoord(latdeg, londeg, latmin, lonmin, latsec, lonsec, lator, lonor);
             g.SetFloat();
-            g.printConversion();
+            cout << g;
 
         }
         else if (strcmp(argv[1], "-toolkit") == 0)
